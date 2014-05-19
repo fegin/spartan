@@ -278,6 +278,32 @@ def tocoo(array):
   '''
   return map(array, fn=_tocoo)
 
+@disable_parakeet
+def _tocsc(data):
+  return data.tocsc()
+
+def tocsc(array):
+  '''
+  Convert ``array`` to use CSC format for tiles.
+
+  :param array: Sparse `Expr`.
+  :rtype: A new array in CSC format.
+  '''
+  return map(array, fn=_tocsc)
+
+@disable_parakeet
+def _tocsr(data):
+  return data.tocsr()
+
+def tocsr(array):
+  '''
+  Convert ``array`` to use CSR format for tiles.
+
+  :param array: Sparse `Expr`.
+  :rtype: A new array in CSR format.
+  '''
+  return map(array, fn=_tocsr)
+
 
 def zeros(shape, dtype=np.float, tile_hint=None):
   '''

@@ -40,6 +40,7 @@ from .reshape import reshape
 from .transpose import transpose
 from .dot import dot
 from .sort import sort
+from .repartition import repartition
 
 Expr.outer = outer
 Expr.sum = sum
