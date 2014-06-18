@@ -76,7 +76,7 @@ def repartition(matrix, axis = 0):
 
   Args:
     matrix: The distarray to be repartitioned. 
-            The distarray should be a sparse matrix.
+            Note that `matrix` should be a sparse matrix.
     axis: Scipy only support two-dimensions sparse matrices. Therefore, 
           0 is row and 1 is column.
   Return:
