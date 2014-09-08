@@ -399,7 +399,7 @@ class Expr(Node):
     try:
       return self.compute_shape()
     except NotShapeable:
-      util.log_debug('Not shapeable: %s', self)
+      util.log_warn('Not shapeable: %s', self)
       return self.evaluate().shape
 
   @property
