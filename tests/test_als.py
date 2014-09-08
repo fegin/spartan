@@ -6,14 +6,14 @@ from datetime import datetime
 
 def benchmark_als(ctx, timer):
   print "#worker:", ctx.num_workers
-  USER_SIZE = 100 * ctx.num_workers
+  USER_SIZE = 1000 * ctx.num_workers
   #USER_SIZE = 200 * 64
   MOVIE_SIZE = 12800
   num_features = 20
   num_iter = 5
-  
+
   A = expr.randint(USER_SIZE, MOVIE_SIZE, low=0, high=5)
-  
+
   util.log_warn('begin als!')
   t1 = datetime.now()
   U, M = als(A, implicit_feedback=True, num_features=num_features, num_iter=num_iter)
