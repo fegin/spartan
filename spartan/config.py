@@ -21,12 +21,12 @@ import argparse
 import logging
 import os
 import sys
-
 import appdirs
+
 
 class Flag(object):
   '''Base object for a representing a command line flag.
-  
+
   Subclasses must implement the ``set`` operation to parse
   a flag value from a command line string.
   '''
@@ -46,14 +46,16 @@ class IntFlag(Flag):
   def parse(self, str):
     self.val = int(str)
 
+
 class StrFlag(Flag):
   def parse(self, str):
     self.val = str
 
+
 class BoolFlag(Flag):
-  '''Boolean flag.  
-  
-  Accepts '0' or 'false' for false values, '1' or 'true' for true values. 
+  '''Boolean flag.
+
+  Accepts '0' or 'false' for false values, '1' or 'true' for true values.
   '''
   def parse(self, str):
     str = str.lower()
@@ -61,8 +63,8 @@ class BoolFlag(Flag):
 
     if str == 'false' or str == '0': val = False
     elif str == 'true' or str == '1': val = True
-    else: 
-      assert False, 'Invalid value for boolean flag: "%s"' % str 
+    else:
+      assert False, 'Invalid value for boolean flag: "%s"' % str
 
     self.val = val
 
@@ -85,7 +87,6 @@ class LogLevelFlag(Flag):
     return LOG_STR[self.val]
 
 
-
 class Flags(object):
   def __init__(self):
     self._parsed = False
@@ -99,14 +100,14 @@ class Flags(object):
 
     assert self.__dict__['_parsed'], 'Access to flags before config.parse() called.'
     return self.__dict__['_vals'][key].val
-  
+
   def __setattr__(self, key, value):
-    if key.startswith('_'): 
+    if key.startswith('_'):
       self.__dict__[key] = value
       return
 
     # print >>sys.stderr, ('Setting flag: %s %s', key, value)
-    
+
     assert self.__dict__['_parsed'], 'Access to flags before config.parse() called.'
     self.__dict__['_vals'][key].val = value
 
@@ -138,24 +139,25 @@ FLAGS.add(BoolFlag('opt_keep_stack', default=False))
 FLAGS.add(BoolFlag('capture_expr_stack', default=False))
 FLAGS.add(BoolFlag('dump_timers', default=False))
 FLAGS.add(BoolFlag('load_balance', default=False))
+FLAGS.add(StrFlag('tiling_alg', default='mincost', help='algorithm to tile the graph'))
 
 # print flags in sorted order
 # from http://stackoverflow.com/questions/12268602/sort-argparse-help-alphabetically
 from argparse import HelpFormatter
 from operator import attrgetter
 
+
 class SortingHelpFormatter(HelpFormatter):
   def add_arguments(self, actions):
     actions = sorted(actions, key=attrgetter('option_strings'))
     super(SortingHelpFormatter, self).add_arguments(actions)
 
-
 def parse(argv):
   '''Parse configuration from flags and/or configuration file.'''
 
   # load flags defined in other modules (is there a better way to do this?)
-  import spartan.expr.local
-  import spartan.expr.optimize
+  import spartan.expr.operator.local
+  import spartan.expr.operator.optimize
   import spartan.cluster
   import spartan.worker
   import spartan.util
@@ -165,7 +167,10 @@ def parse(argv):
 
   FLAGS._parsed = True
 
-  config_file = appdirs.user_data_dir('Spartan', 'rjpower.org') + '/spartan.ini'
+  if hasattr(appdirs, 'user_config_dir'):  # user_config_dir new to v1.3.0
+    config_file = appdirs.user_config_dir('spartan') + '/spartan.ini'
+  else:
+    config_file = appdirs.user_data_dir('spartan') + '/spartan.ini'
   config_dir = os.path.dirname(config_file)
   if not os.path.exists(config_dir):
     try:
@@ -189,8 +194,7 @@ def parse(argv):
       print >>sys.stderr, 'Failed to parse config file: %s' % config_file
       sys.exit(1)
 
-  parser = argparse.ArgumentParser(
-    formatter_class=SortingHelpFormatter)
+  parser = argparse.ArgumentParser(formatter_class=SortingHelpFormatter)
 
   for name, flag in FLAGS:
     parser.add_argument('--' + name, type=str, help=flag.help)
@@ -221,4 +225,3 @@ def parse(argv):
       print '  >> ', name, '\t', flag.val
 
   return rest
-

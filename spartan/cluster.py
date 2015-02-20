@@ -2,7 +2,7 @@
 Functions for managing a cluster of machines.
 
 Spartan currently supports running workers as either threads in the
-current process, or by using ssh to connect to one or more 
+current process, or by using ssh to connect to one or more
 machines.
 
 A Spartan "worker" is a single process; more than one worker can be
@@ -12,8 +12,6 @@ run on a machine; typically one worker is run per core.
 import os.path
 import socket
 import subprocess
-import sys
-import threading
 import time
 import shutil
 from spartan import rpc
@@ -63,9 +61,9 @@ FLAGS.add(IntFlag('worker_failed_heartbeat_threshold', default=10, help='the max
 def start_remote_worker(worker, st, ed):
   '''
   Start processes on a worker machine.
-  
-  The machine will launch worker processes ``st`` through ``ed``. 
-  
+
+  The machine will launch worker processes ``st`` through ``ed``.
+
   :param worker: hostname to connect to.
   :param st: First process index to start.
   :param ed: Last process to start.
@@ -83,13 +81,13 @@ def start_remote_worker(worker, st, ed):
   util.log_info('Starting worker %d:%d on host %s', st, ed, worker)
   if FLAGS.oprofile:
     os.system('mkdir operf.%s' % worker)
-    
-  ssh_args = ['ssh', '-oForwardX11=no', worker ]
- 
+
+  ssh_args = ['ssh', '-oForwardX11=no', worker]
+
   args = ['cd %s && ' % os.path.abspath(os.path.curdir)]
 
   if FLAGS.xterm:
-    args += ['xterm', '-e',]
+    args += ['xterm', '-e']
 
   if FLAGS.oprofile:
     args += ['operf -e CPU_CLK_UNHALTED:100000000', '-g', '-d', 'operf.%s' % worker]
@@ -106,25 +104,27 @@ def start_remote_worker(worker, st, ed):
   for (name, value) in FLAGS:
     if name in ['worker_list', 'print_options']: continue
     args += [repr(value)]
- 
-  #print >>sys.stderr, args 
+
+  #print >>sys.stderr, args
   util.log_debug('Running worker %s', ' '.join(args))
   time.sleep(0.1)
+  # TODO: improve this to make log break at newline
   if worker != 'localhost':
     p = subprocess.Popen(ssh_args + args, executable='ssh')
   else:
     p = subprocess.Popen(' '.join(args), shell=True, stdin=subprocess.PIPE)
-    
+
   return p
+
 
 def start_cluster(num_workers, use_cluster_workers):
   '''
   Start a cluster with ``num_workers`` workers.
-  
+
   If use_cluster_workers is True, then use the remote workers
   defined in `spartan.config`.  Otherwise, workers are all
   spawned on the localhost.
-  
+
   :param num_workers:
   :param use_cluster_workers:
   '''
@@ -132,9 +132,10 @@ def start_cluster(num_workers, use_cluster_workers):
   #clean the checkpoint directory
   if os.path.exists(FLAGS.checkpoint_path):
     shutil.rmtree(FLAGS.checkpoint_path)
-  
+
   master = spartan.master.Master(FLAGS.port_base, num_workers)
 
+  ssh_processes = []
   if not use_cluster_workers:
     start_remote_worker('localhost', 0, num_workers)
   else:
@@ -147,13 +148,17 @@ def start_cluster(num_workers, use_cluster_workers):
         sz = total_tasks
       else:
         sz = util.divup(num_workers, num_hosts)
-      
+
       sz = min(sz, num_workers - count)
-      start_remote_worker(worker, count, count + sz)
+      ssh_processes.append(start_remote_worker(worker, count, count + sz))
       count += sz
       if count == num_workers:
         break
 
   master.wait_for_initialization()
-  return master
 
+  # Kill the now unnecessary ssh processes.
+  # Fegin : if we kill these processes, we can't get log from workers.
+  #for process in ssh_processes:
+    #process.kill()
+  return master
